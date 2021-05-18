@@ -1,0 +1,549 @@
+---
+title: "Soccult Exam Analysis"
+author: "Lina Elkjær Pedersen og Thea Pedersen"
+date: "5/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries}
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+```
+
+#PART 1: Data Cleaning
+
+Here we remove the colums that we do not need, make a new column to categorize the four scenario types, and more.
+
+Firstly, we import the data 
+
+```{r data cleaning}
+
+# saving list of all file names in the SC_exam_data folder in my working directory
+list <- list.files(path = "./SC_exam_data", pattern = ".csv", all.files = FALSE, full.names = TRUE)
+
+
+
+# We create a function for reading the data files and creating the relevant columns:
+read_files <- function(filename) {
+    # load data
+    data1 <- read.csv(file = filename)
+    
+    #Changing the weird names
+    names(data1)[names(data1) == "Initialer..f.eks..TP.."] <- "ID"
+    names(data1)[names(data1) == "trials.thisN"] <- "Trial"
+    names(data1)[names(data1) == "Alder..f.eks..20..."] <- "Age"
+    names(data1)[names(data1) == "Køn..mand.kvinde.andet.."] <- "Gender_par"
+    names(data1)[names(data1) == "slider.response"] <- "Trust_rating"
+    
+    #Creating new columns for Stimulus_type and Scenario_type
+    data1$Stimulus_type <- data1$stimuli
+    data1$Scenario_type_specific <- data1$scenario
+    
+    #Calling all the MJ "male_joyful" in the Stimulus_type column
+    data1$Stimulus_type <- ifelse (data1$Stimulus_type=="stim_MJ01.jpg"
+                                  |data1$Stimulus_type=="stim_MJ02.jpg"
+                                  |data1$Stimulus_type=="stim_MJ03.jpg"
+                                  |data1$Stimulus_type=="stim_MJ04.jpg"
+                                  |data1$Stimulus_type=="stim_MJ05.jpg"
+                                  |data1$Stimulus_type=="stim_MJ06.jpg"
+                                  |data1$Stimulus_type=="stim_MJ07.jpg"
+                                  |data1$Stimulus_type=="stim_MJ08.jpg"
+                                  |data1$Stimulus_type=="stim_MJ09.jpg"
+                                  |data1$Stimulus_type=="stim_MJ10.jpg","male_joyful", data1$Stimulus_type)
+
+    #Same for WJ
+    data1$Stimulus_type <- ifelse (data1$Stimulus_type=="stim_WJ01.jpg"
+                                   |data1$Stimulus_type=="stim_WJ02.jpg"
+                                   |data1$Stimulus_type=="stim_WJ03.jpg"
+                                   |data1$Stimulus_type=="stim_WJ04.jpg"
+                                   |data1$Stimulus_type=="stim_WJ05.jpg"
+                                   |data1$Stimulus_type=="stim_WJ06.jpg"
+                                   |data1$Stimulus_type=="stim_WJ07.jpg"
+                                   |data1$Stimulus_type=="stim_WJ08.jpg"
+                                   |data1$Stimulus_type=="stim_WJ09.jpg"
+                                   |data1$Stimulus_type=="stim_WJ10.jpg","female_joyful", data1$Stimulus_type)
+    #Same for MN
+    data1$Stimulus_type <- ifelse (data1$Stimulus_type=="stim_MN01.jpg"
+                                  |data1$Stimulus_type=="stim_MN02.jpg"
+                                  |data1$Stimulus_type=="stim_MN03.jpg"
+                                  |data1$Stimulus_type=="stim_MN04.jpg"
+                                  |data1$Stimulus_type=="stim_MN05.jpg"
+                                  |data1$Stimulus_type=="stim_MN06.jpg"
+                                  |data1$Stimulus_type=="stim_MN07.jpg"
+                                  |data1$Stimulus_type=="stim_MN08.jpg"
+                                  |data1$Stimulus_type=="stim_MN09.jpg"
+                                  |data1$Stimulus_type=="stim_MN10.jpg","male_neutral", data1$Stimulus_type)
+    #Same for WN
+    data1$Stimulus_type <- ifelse (data1$Stimulus_type=="stim_WN01.jpg"
+                                  |data1$Stimulus_type=="stim_WN02.jpg"
+                                  |data1$Stimulus_type=="stim_WN03.jpg"
+                                  |data1$Stimulus_type=="stim_WN04.jpg"
+                                  |data1$Stimulus_type=="stim_WN05.jpg"
+                                  |data1$Stimulus_type=="stim_WN06.jpg"
+                                  |data1$Stimulus_type=="stim_WN07.jpg"
+                                  |data1$Stimulus_type=="stim_WN08.jpg"
+                                  |data1$Stimulus_type=="stim_WN09.jpg"
+                                  |data1$Stimulus_type=="stim_WN10.jpg","female_neutral", data1$Stimulus_type)
+    
+    
+    #Creating column for Gender of stimulus
+    data1$Gender_stim <- data1$Stimulus_type
+    
+    data1$Gender_stim <- ifelse(data1$Gender_stim=="male_neutral"
+                                |data1$Gender_stim=="male_joyful", "male", "female")
+
+    
+    #Creating column for Gender of stimulus
+    data1$Emotion <- data1$Stimulus_type
+    
+    data1$Emotion<- ifelse(data1$Emotion=="male_neutral"
+                                |data1$Emotion=="female_neutral", "neutral", "joyful")
+
+    
+    
+     #Calling the "Du går"-scenario "safety1" in the Scenario_type column
+    data1$Scenario_type_specific <- ifelse (data1$Scenario_type_specific=="Du går alene på gaden om aftenen. Personen på billedet kommer op til dig og vil stille dig et spørgsmål. Hvor tilbøjelig er du til at stole på personen på billedet i denne situation?"
+                              ,"safety1", data1$Scenario_type_specific)
+    
+    #Same for "Denne person"
+    data1$Scenario_type_specific <- ifelse (data1$Scenario_type_specific=="Denne person sælger et møbel på Den Blå Avis, som du gerne vil købe. Personen siger, at du kan få det, hvis du har mulighed for at hente det på deres private adresse. Hvor tilbøjelig er du til at stole på personen på billedet i denne situation?"
+                              ,"safety2", data1$Scenario_type_specific)
+    #Same for "Du kan "
+    data1$Scenario_type_specific <- ifelse (data1$Scenario_type_specific=="Du kan ikke selv løse en matematisk opgave, og du er derfor nødt til at spørge om hjælp. Hvor tilbøjelig er du til stole på at personen på billedet kan hjælpe dig med opgaven?"
+                              ,"capabilities3", data1$Scenario_type_specific)
+    #Same for "Du skal"
+    data1$Scenario_type_specific <- ifelse (data1$Scenario_type_specific=="Du skal have foretaget en knæoperation under fuld narkose. Personen på billedet er lægen som skal foretage operationen. Hvor tilbøjelig er du til at stole på personen på billedet til at foretage operationen?"
+                              ,"capabilities4", data1$Scenario_type_specific)
+    
+   
+    
+        #Creating column for Gender of stimulus
+    data1$Scenario_type <- data1$Scenario_type_specific
+    
+    data1$Scenario_type<- ifelse(data1$Scenario_type=="safety1"
+                                |data1$Scenario_type=="safety2", "safety", "capabilities")
+    
+    
+     #Renaming for consistensy
+    data1 <- data1 %>%
+      rename(
+        Stimulus = stimuli,
+        Scenario = scenario,
+        Date = date)
+
+    #Anonymizing data
+    data1$ID <- sapply(data1$ID, digest::digest, algo = "crc32")  
+    
+    data1$Gender_par <-tolower(data1$Gender_par)
+     
+    data1$Gender_par <-ifelse(data1$Gender_par=="kvinde", "female", data1$Gender_par)
+    data1$Gender_par <-ifelse(data1$Gender_par=="mand", "male", data1$Gender_par)
+    
+       
+    #selecting the columns we want to keep in the dataframe
+    data1 <- data1 %>%
+      select(
+        ID, Age, Gender_par, Emotion, Gender_stim, Trial, Trust_rating, Date, Stimulus, Stimulus_type, Scenario, Scenario_type, Scenario_type_specific
+        )
+
+    #Omitting data that is NA 
+    data1 <- na.omit(data1)
+    
+    
+    return(data1)
+}
+
+
+# test it on just one file while writing the function
+#test_data <- read_files(list[3])
+
+
+# mapping a df with all the files
+df = list %>%
+    purrr::map_df(read_files)
+
+#writing a csv of the dataframe 
+write.csv(df,'DF_exam_data.csv')
+
+
+print(list)
+```
+
+
+
+```{r loading more libraries}
+library(tidyverse)
+library(ggplot2)
+library(brms)
+
+#Reloading df
+#df <- read.csv("DF_exam_data.csv")
+
+#Scaling outcome variable
+df$Trust_rating_scaled<- (df$Trust_rating - mean(df$Trust_rating)) / sd(df$Trust_rating)
+
+```
+
+
+
+M1 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID)
+M2 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|ID)
+M3 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim + Scenario_type + Emotion + (1|Gender_par) + (1|ID)
+M4 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|ID)
+M5 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID)
+M6 = Trust_rating_scaled ~ 1 + Gender_stim + Emotion + (1|Gender_par) + (1|ID)
+M7 = Trust_rating_scaled ~ 1 + Emotion + (1|ID)
+M8 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type*Emotion + (1|Gender_par) + (1|ID)
+
+
+loo_compare()  output
+elpd_diff se_diff elpd_loo se_elpd_loo p_loo  se_p_loo looic  se_looic
+m5    0.0       0.0  -840.3     22.7        23.1    1.4   1680.6   45.5  
+m2   -0.3       0.1  -840.6     22.7        23.5    1.5   1681.2   45.5  
+m4   -0.4       0.1  -840.7     22.8        23.7    1.5   1681.4   45.5  
+m1   -0.4       0.1  -840.7     22.7        23.6    1.5   1681.4   45.5  
+m8   -1.4       1.9  -841.7     22.8        26.8    1.7   1683.3   45.7  
+m3  -20.9       6.1  -861.2     23.6        22.9    1.5   1722.4   47.2  
+m6  -22.6       6.9  -862.9     23.9        21.5    1.4   1725.9   47.8  
+m7  -30.3       8.4  -870.6     24.2        20.4    1.4   1741.1   48.3  
+
+
+#Part 2: MODELS
+```{r MODELS}
+
+get_prior(data = df, family = gaussian(), Trust_rating ~ 1 + Scenario_type*Gender_stim + Gender_par + Emotion + (1|Gender_par) + (1|ID))
+
+#M1##############################################
+m1_prior <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores=2,
+      sample_prior = "only",
+      control = list(adapt_delta = 0.999, max_treedepth = 15))
+
+pp_check(m1_prior, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M1 - Prior Predictive Check")
+
+
+#NO divergent transitions
+m1 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 2,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.999, max_treedepth = 15))
+
+pp_check(m1, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M1 - Posterior Predictive Check")
+
+summary(m1)
+
+#M2###################################################### 
+#NO divergent transitions
+m2 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.999, max_treedepth = 15))
+
+pp_check(m2, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M2 - Posterior Predictive Check")
+
+#M3######################################################
+#2 divergent transitions
+
+m3 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim + Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m3, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M3 - Posterior Predictive Check")
+
+
+#M4####################################################
+#With 2000 iterations the ESS is too low, however there are NO divergent transitions
+#With 2500 iterations ALL IS GOOD :) 
+
+m4 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      iter = 2500,
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m4, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M4 - Posterior Predictive Check")
+
+
+#M5####################################################
+#5 divergent transitions
+m5 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.999, max_treedepth = 15))
+
+summary(m5)
+
+pp_check(m5, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M5 - Posterior Predictive Check")
+
+#M6####################################################
+# 2 divergent transitions
+m6 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Gender_stim + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m6, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M6 - Posterior Predictive Check")
+
+
+#M7####################################################
+#With 2000 iterations the ESS is too low, however there are NO divergent transitions
+#With 3000 iterations ALL IS GOOD :)
+
+m7 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Emotion + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      iter = 3000,
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m7, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M7 - Posterior Predictive Check")
+
+summary(m7)
+
+
+#M8######################################################
+# 12 divergent transitions
+
+m8 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m8, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M9 - Posterior Predictive Check")
+
+
+#M9######################################################
+#No divergent transitions
+m9 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Scenario_type + Emotion + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m9, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M9 - Posterior Predictive Check")
+
+
+summary(m9)
+
+#M10####################################################
+#4 divergent transitions
+m10 <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Emotion + (1|Gender_par) + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      iter = 3000,
+      cores = 4,
+      sample_prior = TRUE,
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m10, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("M10 - Posterior Predictive Check")
+
+```
+
+
+#Part 3: PLOTS
+```{r PLOTS}
+
+library("bayesplot")
+
+#HYPOTHESIS 1 + 2 - Posterior predictive check 
+
+color_scheme_set("red")
+
+post <- posterior_samples(m1)
+
+post %>% 
+  select(starts_with("b_")) %>% 
+  mcmc_intervals(prob = .95,
+                 point_est = "mean") +
+  labs(title = "Trust ratings") +
+  theme_bw() +
+  theme(axis.text.y = element_text(hjust = 0),
+        axis.ticks.y = element_blank(),
+        panel.grid = element_blank())
+
+
+#HYPOTHESIS 3 - Posterior predictive check
+post_m7 <- posterior_samples(m7)
+
+post_m7 %>% 
+  select(starts_with("b_")) %>% 
+  mcmc_intervals(prob = .95,
+                 point_est = "mean") +
+  labs(title = "M7 - Trust ratings") +
+  theme_bw() +
+  theme(axis.text.y = element_text(hjust = 0),
+        axis.ticks.y = element_blank(),
+        panel.grid = element_blank())
+
+
+#Hypothesis 1
+plot(hypothesis(m1,"Gender_stimmale>0")) 
+ 
+#Hypothesis 2
+plot(hypothesis(m1,"Gender_stimmale:Scenario_typesafety<0")) 
+plot(hypothesis(m1,"Scenario_typesafety>0")) 
+
+#Hypothesis 3
+plot(hypothesis(m7,"Emotionneutral<0")) 
+
+
+
+#HYPOTHESIS 1+2 - Gender_stim and Scenario type
+ggplot(df, aes(Trust_rating, fill = Gender_stim))+
+  geom_bar(position= "dodge")+
+  facet_wrap(.~Scenario_type)+
+  theme_linedraw()
+
+#HYPOTHESIS 3 - Emotion 
+ggplot(df, aes(Trust_rating, fill = Emotion))+
+  geom_bar(position= "dodge")+
+  theme_linedraw()
+
+
+
+#SECONDARY RESULTS - Gender_stim and Scenario type + Gender of participant
+ggplot(df, aes(Trust_rating, fill = Gender_stim))+
+  geom_bar(position= "dodge")+
+  facet_wrap(.~Scenario_type+Gender_par)+
+  theme_linedraw()
+
+#SECONDARY RESULTS - Emotion and scenariotype_specific 
+ggplot(df, aes(Trust_rating, fill = Emotion))+
+  geom_bar(position= "dodge")+
+  facet_wrap(.~Scenario_type)+
+  theme_linedraw()
+
+```
+
+
+#Part 4: Comparing models
+```{r Comparing models}
+#making loo comparison
+m1<- add_criterion(m1, "loo")
+m2 <- add_criterion(m2, "loo")
+m4 <- add_criterion(m4, "loo")
+m7 <- add_criterion(m7, "loo")
+m9 <- add_criterion(m9, "loo")
+
+loo_compare( m1, m2, m4, m7, m9, criterion = "loo") %>% 
+  print(simplify = F)
+
+```
+  
+  
+#Participant info
+```{r Participant info}
+
+min(df$Age)
+
+max(df$Age)
+
+mean(df$Age)
+
+sd(df$Age)
+
+```

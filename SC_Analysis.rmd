@@ -27,7 +27,7 @@ Firstly, we import the data
 ```{r data cleaning}
 
 # saving list of all file names in the SC_exam_data folder in my working directory
-list <- list.files(path = "./SC_exam_data", pattern = ".csv", all.files = FALSE, full.names = TRUE)
+list <- list.files(path = "./data", pattern = ".csv", all.files = FALSE, full.names = TRUE)
 
 
 

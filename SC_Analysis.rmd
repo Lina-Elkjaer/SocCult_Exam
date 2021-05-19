@@ -173,8 +173,6 @@ df = list %>%
 #writing a csv of the dataframe 
 write.csv(df,'DF_exam_data.csv')
 
-
-print(list)
 ```
 
 
@@ -193,39 +191,16 @@ df$Trust_rating_scaled<- (df$Trust_rating - mean(df$Trust_rating)) / sd(df$Trust
 ```
 
 
-
-M1 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID)
-M2 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|ID)
-M3 = Trust_rating_scaled ~ 1 + Gender_par + Gender_stim + Scenario_type + Emotion + (1|Gender_par) + (1|ID)
-M4 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|ID)
-M5 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID)
-M6 = Trust_rating_scaled ~ 1 + Gender_stim + Emotion + (1|Gender_par) + (1|ID)
-M7 = Trust_rating_scaled ~ 1 + Emotion + (1|ID)
-M8 = Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type*Emotion + (1|Gender_par) + (1|ID)
-
-
-loo_compare()  output
-elpd_diff se_diff elpd_loo se_elpd_loo p_loo  se_p_loo looic  se_looic
-m5    0.0       0.0  -840.3     22.7        23.1    1.4   1680.6   45.5  
-m2   -0.3       0.1  -840.6     22.7        23.5    1.5   1681.2   45.5  
-m4   -0.4       0.1  -840.7     22.8        23.7    1.5   1681.4   45.5  
-m1   -0.4       0.1  -840.7     22.7        23.6    1.5   1681.4   45.5  
-m8   -1.4       1.9  -841.7     22.8        26.8    1.7   1683.3   45.7  
-m3  -20.9       6.1  -861.2     23.6        22.9    1.5   1722.4   47.2  
-m6  -22.6       6.9  -862.9     23.9        21.5    1.4   1725.9   47.8  
-m7  -30.3       8.4  -870.6     24.2        20.4    1.4   1741.1   48.3  
-
-
 #Part 2: MODELS
 ```{r MODELS}
 
-get_prior(data = df, family = gaussian(), Trust_rating ~ 1 + Scenario_type*Gender_stim + Gender_par + Emotion + (1|Gender_par) + (1|ID))
+#get_prior(data = df, family = gaussian(), Trust_rating ~ 1 + Scenario_type*Gender_stim + Gender_par + Emotion + (1|Gender_par) + (1|ID))
 
 #M1##############################################
-m1_prior <- 
-  brm(data = df, 
+m1_prior <-
+  brm(data = df,
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Gender_par + Emotion + (1|Gender_par) + (1| ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -236,14 +211,14 @@ m1_prior <-
 
 pp_check(m1_prior, nsamples = 100)+
   xlim(-20,20)+
-  ggtitle("M1 - Prior Predictive Check")
+  ggtitle("Figure 1 - M1 Prior Predictive Check")
 
 
-#NO divergent transitions
-m1 <- 
-  brm(data = df, 
+
+m1 <-
+  brm(data = df,
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Gender_par + Emotion + (1|Gender_par) + (1| ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -254,16 +229,16 @@ m1 <-
 
 pp_check(m1, nsamples = 100)+
   xlim(-20,20)+
-  ggtitle("M1 - Posterior Predictive Check")
+  ggtitle("Figure 2 - M1 Posterior Predictive Check")
 
 summary(m1)
 
-#M2###################################################### 
-#NO divergent transitions
+#M2######################################################
+
 m2 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim*Scenario_type + Emotion + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Gender_par + Emotion + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -277,12 +252,12 @@ pp_check(m2, nsamples = 100)+
   ggtitle("M2 - Posterior Predictive Check")
 
 #M3######################################################
-#2 divergent transitions
+
 
 m3 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_par + Gender_stim + Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -297,13 +272,11 @@ pp_check(m3, nsamples = 100)+
 
 
 #M4####################################################
-#With 2000 iterations the ESS is too low, however there are NO divergent transitions
-#With 2500 iterations ALL IS GOOD :) 
 
 m4 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -319,11 +292,11 @@ pp_check(m4, nsamples = 100)+
 
 
 #M5####################################################
-#5 divergent transitions
+
 m5 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_stim*Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Emotion*Scenario_type + Gender_par + Gender_stim + (1|Gender_par) + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -339,11 +312,11 @@ pp_check(m5, nsamples = 100)+
   ggtitle("M5 - Posterior Predictive Check")
 
 #M6####################################################
-# 2 divergent transitions
+
 m6 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Gender_stim + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Emotion*Scenario_type + Gender_par + Gender_stim + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -358,13 +331,28 @@ pp_check(m6, nsamples = 100)+
 
 
 #M7####################################################
-#With 2000 iterations the ESS is too low, however there are NO divergent transitions
-#With 3000 iterations ALL IS GOOD :)
+
+m7_prior <- 
+  brm(data = df, 
+      family = gaussian(),
+      Trust_rating_scaled ~ 1 + Emotion*Scenario_type + Gender_stim + (1|ID),
+      prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1), class = b),
+                prior(exponential(1), class = sd),
+                prior(normal(1, 0.5), class = sigma)),
+      iter = 3000,
+      cores = 4,
+      sample_prior = "only",
+      control = list(adapt_delta = 0.99, max_treedepth = 15))
+
+pp_check(m7_prior, nsamples = 100)+
+  xlim(-20,20)+
+  ggtitle("Figure 3 - M7 Prior Predictive Check")
 
 m7 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Emotion + (1|ID),
+      Trust_rating_scaled ~ 1 + Emotion*Scenario_type + Gender_stim + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -376,18 +364,18 @@ m7 <-
 
 pp_check(m7, nsamples = 100)+
   xlim(-20,20)+
-  ggtitle("M7 - Posterior Predictive Check")
+  ggtitle("Figure 4 - M7 Posterior Predictive Check")
 
 summary(m7)
 
 
 #M8######################################################
-# 12 divergent transitions
+
 
 m8 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Scenario_type + Emotion + (1|Gender_par) + (1|ID),
+      Trust_rating_scaled ~ 1 + Emotion*Scenario_type + Gender_stim + (1|Gender_par) + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -398,15 +386,15 @@ m8 <-
 
 pp_check(m8, nsamples = 100)+
   xlim(-20,20)+
-  ggtitle("M9 - Posterior Predictive Check")
+  ggtitle("M8 - Posterior Predictive Check")
 
 
 #M9######################################################
-#No divergent transitions
+
 m9 <- 
   brm(data = df, 
       family = gaussian(),
-      Trust_rating_scaled ~ 1 + Scenario_type + Emotion + (1|ID),
+      Trust_rating_scaled ~ 1 + Gender_par + Emotion + Scenario_type + Gender_stim + (1|Gender_par) + (1|ID),
       prior = c(prior(normal(0, 1), class = Intercept),
                 prior(normal(0, 1), class = b),
                 prior(exponential(1), class = sd),
@@ -421,25 +409,6 @@ pp_check(m9, nsamples = 100)+
 
 
 summary(m9)
-
-#M10####################################################
-#4 divergent transitions
-m10 <- 
-  brm(data = df, 
-      family = gaussian(),
-      Trust_rating_scaled ~ 1 + Emotion + (1|Gender_par) + (1|ID),
-      prior = c(prior(normal(0, 1), class = Intercept),
-                prior(normal(0, 1), class = b),
-                prior(exponential(1), class = sd),
-                prior(normal(1, 0.5), class = sigma)),
-      iter = 3000,
-      cores = 4,
-      sample_prior = TRUE,
-      control = list(adapt_delta = 0.99, max_treedepth = 15))
-
-pp_check(m10, nsamples = 100)+
-  xlim(-20,20)+
-  ggtitle("M10 - Posterior Predictive Check")
 
 ```
 
@@ -466,7 +435,7 @@ post %>%
         panel.grid = element_blank())
 
 
-#HYPOTHESIS 3 - Posterior predictive check
+#HYPOTHESIS 3 + 4 - Posterior predictive check
 post_m7 <- posterior_samples(m7)
 
 post_m7 %>% 
@@ -484,25 +453,40 @@ post_m7 %>%
 plot(hypothesis(m1,"Gender_stimmale>0")) 
  
 #Hypothesis 2
-plot(hypothesis(m1,"Gender_stimmale:Scenario_typesafety<0")) 
 plot(hypothesis(m1,"Scenario_typesafety>0")) 
 
 #Hypothesis 3
-plot(hypothesis(m7,"Emotionneutral<0")) 
+plot(hypothesis(m7,"Scenario_typesafety>0"))
+
+#hypothesis 4 
+plot(hypothesis(m7,"Emotionneutral>0"))
 
 
+summary(m7)
 
 #HYPOTHESIS 1+2 - Gender_stim and Scenario type
-ggplot(df, aes(Trust_rating, fill = Gender_stim))+
-  geom_bar(position= "dodge")+
+ggplot(data=df, aes(x=Trust_rating)) + 
+      geom_bar(aes(y = ..prop.., fill = Gender_stim), position = "dodge")+
   facet_wrap(.~Scenario_type)+
   theme_linedraw()
 
-#HYPOTHESIS 3 - Emotion 
-ggplot(df, aes(Trust_rating, fill = Emotion))+
-  geom_bar(position= "dodge")+
+
+#HYPOTHESIS 3+4 - Emotion and Scenario type
+ggplot(data=df, aes(x=Trust_rating)) + 
+      geom_bar(aes(y = ..prop.., fill = Emotion), position = "dodge")+
+  facet_wrap(.~Scenario_type)+
   theme_linedraw()
 
+
+
+
+
+
+
+ggplot(data=df, aes(x=Trust_rating)) + 
+      geom_bar(aes(y = ..prop.., fill = Gender_stim), position = "dodge")+
+  facet_wrap(.~Scenario_type+Gender_par)+
+  theme_linedraw()
 
 
 #SECONDARY RESULTS - Gender_stim and Scenario type + Gender of participant
@@ -517,19 +501,42 @@ ggplot(df, aes(Trust_rating, fill = Emotion))+
   facet_wrap(.~Scenario_type)+
   theme_linedraw()
 
+
+#SECONDARY RESULTS - Emotion and scenariotype_specific 
+ggplot(df, aes(Trust_rating, colour = Emotion))+
+  geom_density()+
+  facet_wrap(.~Scenario_type)+
+  theme_linedraw()
+
+
 ```
 
 
 #Part 4: Comparing models
 ```{r Comparing models}
-#making loo comparison
-m1<- add_criterion(m1, "loo")
-m2 <- add_criterion(m2, "loo")
-m4 <- add_criterion(m4, "loo")
-m7 <- add_criterion(m7, "loo")
-m9 <- add_criterion(m9, "loo")
 
-loo_compare( m1, m2, m4, m7, m9, criterion = "loo") %>% 
+summary(m1)  #0
+summary(m2)  #0
+summary(m3)  #0
+summary(m4)  #13 divergent transitions
+summary(m5)  #0
+summary(m6)  #0
+summary(m7)  #0
+summary(m8)  #1 divergent transition
+summary(m9)  #75 divergent transitions
+#making loo comparison
+
+m1 <- add_criterion(m1, "loo")
+m2 <- add_criterion(m2, "loo")
+m3 <- add_criterion(m3, "loo")
+#m4 <- add_criterion(m4, "loo")
+m5 <- add_criterion(m5, "loo")
+m6 <- add_criterion(m6, "loo")
+m7 <- add_criterion(m7, "loo")
+#m8 <- add_criterion(m8, "loo")
+#m9 <- add_criterion(m9, "loo")
+
+loo_compare( m1, m2, m3, m5, m6, m7, criterion = "loo") %>% 
   print(simplify = F)
 
 ```
